@@ -50,11 +50,3 @@ Acesse os endpoints da API através dos seguintes URLs:
 - **Autenticação**: `/api/token/`, `/api/token/refresh/`, `/api/token/verify/`
 
 Consulte a documentação do Django REST Framework para mais detalhes sobre como interagir com a API.
-
-## Contribuição
-
-Sinta-se à vontade para contribuir com melhorias ou correções. Veja o arquivo [CONTRIBUTING.md](CONTRIBUTING.md) para mais informações sobre como contribuir.
-
-## Licença
-
-Este projeto está licenciado sob a [Licença MIT](LICENSE).
