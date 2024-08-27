@@ -9,13 +9,13 @@ from rest_framework_simplejwt.views import (
 )
 
 biblioteca_router = SimpleRouter()
-# livros-list -> GET
-# livros-detail -> GET, POST, PUT, DELETE
 biblioteca_router.register('api/livros', views.LivroViewSet, basename='api-livros')
-biblioteca_router.register('api/categorias', views.CategoriaViewSet, basename='api-livros-categoria')
+biblioteca_router.register('api/categorias', views.CategoriaViewSet, basename='api-categoria')
+biblioteca_router.register('api/autores', views.AutorViewSet, basename='api-autores')
 
 urlpatterns = [
     path('', include(biblioteca_router.urls)),
+    path('api/superuser/', views.SuperuserViewSet.as_view({'patch': 'partial_update', 'post': 'create'}), name='superuser-profile-update'),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
