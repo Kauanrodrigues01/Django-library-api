@@ -12,6 +12,7 @@ biblioteca_router = SimpleRouter()
 biblioteca_router.register('api/livros', views.LivroViewSet, basename='api-livros')
 biblioteca_router.register('api/categorias', views.CategoriaViewSet, basename='api-categoria')
 biblioteca_router.register('api/autores', views.AutorViewSet, basename='api-autores')
+biblioteca_router.register('api/emprestimos', views.EmprestimoViewSet, basename='api-emprestimos')
 
 urlpatterns = [
     path('', include(biblioteca_router.urls)),

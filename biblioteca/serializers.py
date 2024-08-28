@@ -1,10 +1,11 @@
 from rest_framework import serializers
-from biblioteca.models import Livro, Categoria, Autor
+from biblioteca.models import Livro, Categoria, Autor, Emprestimo
 from biblioteca.validators import LivroValidate, EmprestimoValidate, AuthorValidate
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 import re
+import datetime
 
 class LivroSerializer(serializers.ModelSerializer):
     class Meta:
@@ -79,7 +80,6 @@ class AuthorSerializer(serializers.ModelSerializer):
         
         return attrs
 
-
 class SuperuserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -125,3 +125,36 @@ class SuperuserSerializer(serializers.ModelSerializer):
             if not nome.isalpha():
                 raise serializers.ValidationError({'error_last_name':'O last_name nome deve conter apenas letras.'})
         return super().validate(attrs)
+
+class EmprestimoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Emprestimo
+        fields = ['id', 'livro', 'usuario', 'data_inicio', 'data_prevista_devolucao', 'devolvido']
+        
+    livro = serializers.PrimaryKeyRelatedField(queryset=Livro.objects.all())
+    usuario = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    
+    def validate(self, attrs):
+        # Data de início é gerada automaticamente pelo modelo, não é necessário no validate.
+        # Remova 'data_inicio' de attrs
+        attrs.pop('data_inicio', None)
+        
+        EmprestimoValidate(dados=attrs, ErrorClass=serializers.ValidationError)
+        
+        return attrs
+    
+    def create(self, validated_data):
+        # Definindo data_inicio como hoje, pois é um campo gerado automaticamente.
+        emprestimo = Emprestimo.objects.create(
+            livro=validated_data['livro'],
+            usuario=validated_data['usuario'],
+            data_inicio=datetime.date.today(),  # Data de início é definida como hoje
+            data_prevista_devolucao=validated_data['data_prevista_devolucao']
+        )
+        return emprestimo
+    
+    def partial_update(self, instance, validated_data):
+        instance.devolvido = validated_data.get('devolvido', instance.devolvido)
+        instance.data_prevista_devolucao = validated_data.get('data_prevista_devolucao', instance.data_prevista_devolucao)
+        instance.save()
+        return instance

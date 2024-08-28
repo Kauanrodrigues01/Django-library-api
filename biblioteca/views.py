@@ -3,8 +3,7 @@ from django.db.models import F, Value
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from biblioteca.models import Livro, Categoria, Autor, Emprestimo
-from biblioteca.serializers import LivroSerializer, CategoriaSerializer, AuthorSerializer, SuperuserSerializer
-from django.shortcuts import get_object_or_404
+from biblioteca.serializers import LivroSerializer, CategoriaSerializer, AuthorSerializer, SuperuserSerializer, EmprestimoSerializer
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny 
 from rest_framework.pagination import PageNumberPagination
@@ -30,6 +29,7 @@ class LivroViewSet(ModelViewSet):
     
     serializer_class = LivroSerializer
     pagination_class = LivroViewPagination
+    get_permissions = [IsAuthenticated]
     http_method_names = ['get', 'post', 'patch', 'delete', 'head', 'options']
 
     def get_queryset(self):
@@ -49,10 +49,10 @@ class LivroViewSet(ModelViewSet):
         if self.request.method == 'GET':
             return [AllowAny()]
         if self.request.method == 'POST':
-            return [IsAuthenticated(), IsAdminUser()]
+            return [IsAdminUser()]
         if self.request.method in ['PATCH', 'DELETE']:
-            return [IsOwner(), IsAdminUser()]
-        return [IsAuthenticated(), IsAdminUser()]
+            return [IsAdminUser()]
+        return [IsAdminUser()]
     
     def create(self, request, *args, **kwargs):
         request.data['criador'] = request.user.id
@@ -120,3 +120,37 @@ class SuperuserViewSet(ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response({"success": "Os dados foram atualizados com sucesso."}, status=status.HTTP_200_OK)
+
+
+class EmprestimoViewSet(ModelViewSet):
+    queryset = Emprestimo.objects.all()
+    serializer_class = EmprestimoSerializer
+    permission_classes = [IsAdminUser]
+    http_method_names = ['get', 'post', 'patch', 'delete']
+    
+    def get_queryset(self):
+        qs = self.queryset
+        if self.request.user.is_superuser:
+            usuario = self.request.query_params.get('usuario', None)
+            livro = self.request.query_params.get('livro', None)
+            situacao = self.request.query_params.get('devolvido', None)
+            if situacao:
+                situacao = True if situacao.lower() == 'true' else False
+                qs = qs.filter(devolvido=situacao)
+            if livro:
+                qs = qs.filter(livro__titulo__icontains=livro)
+            if usuario:
+                qs = qs.filter(usuario__username__icontains=usuario)
+            return qs
+        if self.request.user.is_authenticated:
+            livro = self.request.query_params.get('livro', None)
+            situacao = self.request.query_params.get('devolvido', None)
+            if situacao:
+                situacao = True if situacao.lower() == 'true' else False
+                qs = qs.filter(devolvido=situacao)
+            if livro:
+                qs = qs.filter(livro__titulo__icontains=livro)
+            qs = qs.filter(usuario=self.request.user)
+            return qs
+        
+        return qs

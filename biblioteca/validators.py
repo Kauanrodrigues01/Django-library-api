@@ -50,23 +50,36 @@ class EmprestimoValidate:
         dados = self.dados
         error_class = self.ErrorClass
         
-        data_inicio = dados.get('data_inicio')
+        data_inicio = dados.get('data_inicio')  # data_inicio não será obrigatório na validação
         data_prevista_devolucao = dados.get('data_prevista_devolucao')
+        devolvido = dados.get('devolvido')
         
-        # Validação da data de devolução
-        if isinstance(data_inicio, datetime):
-            data_inicio = data_inicio.date()
-        
-        if isinstance(data_prevista_devolucao, datetime):
+        if isinstance(data_prevista_devolucao, str):
+            try:
+                data_prevista_devolucao = datetime.strptime(data_prevista_devolucao, '%Y-%m-%d').date()
+            except ValueError:
+                self.errors['data_prevista_devolucao'].append('Formato de data inválido para data prevista de devolução.')
+        elif isinstance(data_prevista_devolucao, datetime):
             data_prevista_devolucao = data_prevista_devolucao.date()
 
-        if data_prevista_devolucao <= data_inicio:
+        # Validar se data_prevista_devolucao é posterior a data_inicio
+        if data_inicio and data_prevista_devolucao:
+            if data_prevista_devolucao <= data_inicio:
+                self.errors['data_prevista_devolucao'].append(
+                    'A data prevista de devolução deve ser posterior à data de início do empréstimo.'
+                )
+        elif data_prevista_devolucao is None:
             self.errors['data_prevista_devolucao'].append(
-                'A data prevista de devolução deve ser posterior à data de início do empréstimo.'
+                'A data prevista de devolução deve ser fornecida.'
             )
-        
-        # Adicione outras validações, como limites de empréstimos ou regras específicas.
-        
+
+        # Verificar se o empréstimo foi devolvido
+        if devolvido:
+            if data_inicio is None or data_prevista_devolucao is None:
+                self.errors['devolvido'].append(
+                    'Se o empréstimo foi devolvido, as datas de início e prevista de devolução devem estar definidas.'
+                )
+
         if self.errors:
             raise error_class(self.errors)
         
